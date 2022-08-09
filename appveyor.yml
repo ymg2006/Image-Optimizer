@@ -1,4 +1,4 @@
-version: 1.1.0.{build}
+version: 1.0.{build}
 image: Visual Studio 2019
 configuration: Release
 platform: Any CPU
@@ -11,11 +11,6 @@ before_build:
     nuget restore
 build:
   verbosity: minimal
-after_build:
-- cmd: >-
-    7z a IOptimizer.zip -r %APPVEYOR_BUILD_FOLDER%\IOptimizer\bin\Release\
-
-    appveyor PushArtifact IOptimizer.zip
 deploy:
 - provider: GitHub
   release: IOptimizer-v$(APPVEYOR_BUILD_VERSION)
