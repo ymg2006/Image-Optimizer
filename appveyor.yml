@@ -9,27 +9,19 @@ before_build:
     copy C:\projects\image-optimizer\IOptimizer\Tools\*.*  C:\projects\image-optimizer\IOptimizer\bin\Release\Tools /Y >NUL
 
     nuget restore
-
 build:
   verbosity: minimal
 after_build:
 - cmd: >-
     7z a IOptimizer.zip -r %APPVEYOR_BUILD_FOLDER%\IOptimizer\bin\Release\
 
-artifacts:
-  - path: IOptimizer.zip
-    name: IOptimizer
-    type: zip
-
+    appveyor PushArtifact IOptimizer.zip
 deploy:
+- provider: GitHub
   release: IOptimizer-v$(APPVEYOR_BUILD_VERSION)
-  description: 'Release description'
-  provider: GitHub
+  description: Release description
   auth_token:
-    secure: mrchthX5222OisS9nHqIqncf8OfDaPwqMS/SG5hhXaFodzF4UUmjOCZG7DJBPa8r
+    secure: BJFiPQhbi4Q9jbg6AYqI4Gy2W6B61y2tH9ggn2Jrj/c/yURY8dAmb9ULlkyTejQW
   artifact: /.*\.zip/
-  draft: false
-  prerelease: false
   on:
     branch: master
-    APPVEYOR_REPO_TAG: false
