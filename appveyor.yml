@@ -8,11 +8,11 @@ before_build:
 
     copy C:\projects\image-optimizer\IOptimizer\Tools\*.*  C:\projects\image-optimizer\IOptimizer\bin\Release\Tools /Y >NUL
 
-    dotnet restore "Image Optimizer.sln"
+    msbuild "Image Optimizer.sln" /t:Restore /p:Configuration=Release /p:Platform="Any CPU" /verbosity:minimal
 build:
   verbosity: minimal
 test_script:
-- cmd: dotnet test "Image Optimizer.sln" --configuration Release
+- cmd: dotnet test "Image Optimizer.sln" --configuration Release --no-build --no-restore
 after_build:
 - cmd: >-
     7z a IOptimizer.zip -r %APPVEYOR_BUILD_FOLDER%\IOptimizer\bin\Release\
