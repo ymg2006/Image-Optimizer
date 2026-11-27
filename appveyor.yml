@@ -1,5 +1,5 @@
 version: 1.1.0.{build}
-image: Visual Studio 2019
+image: Visual Studio 2022
 configuration: Release
 platform: Any CPU
 before_build:
@@ -8,9 +8,11 @@ before_build:
 
     copy C:\projects\image-optimizer\IOptimizer\Tools\*.*  C:\projects\image-optimizer\IOptimizer\bin\Release\Tools /Y >NUL
 
-    nuget restore
+    dotnet restore "Image Optimizer.sln"
 build:
   verbosity: minimal
+test_script:
+- cmd: dotnet test "Image Optimizer.sln" --configuration Release
 after_build:
 - cmd: >-
     7z a IOptimizer.zip -r %APPVEYOR_BUILD_FOLDER%\IOptimizer\bin\Release\

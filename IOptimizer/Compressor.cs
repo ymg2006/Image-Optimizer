@@ -18,71 +18,82 @@ namespace IOptimizer
 
         public Compressor(string cwd)
         {
-            _cwd = cwd;
+            _cwd = Path.GetFullPath(cwd);
         }
 
         public CompressionResult CompressFile(string fileName, bool lossy)
         {
-            string targetFile = Path.ChangeExtension(Path.GetTempFileName(), Path.GetExtension(fileName));
+            fileName = Path.GetFullPath(fileName);
+            if (!File.Exists(fileName))
+                throw new FileNotFoundException("The input file does not exist.", fileName);
+            if (!IsFileSupported(fileName))
+                throw new NotSupportedException("Unsupported file format.");
 
-            var start = new ProcessStartInfo("cmd")
+            string targetFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + Path.GetExtension(fileName));
+            string extension = Path.GetExtension(fileName).ToLowerInvariant();
+            string tool = extension == ".png" ? "pingo.exe"
+                : extension == ".gif" ? "gifsicle.exe"
+                : lossy ? "cjpeg.exe" : "jpegtran.exe";
+            string toolPath = Path.Combine(_cwd, tool);
+            if (!File.Exists(toolPath))
+                throw new FileNotFoundException("The image tool was not found: " + toolPath, toolPath);
+
+            try
             {
-                WindowStyle = ProcessWindowStyle.Hidden,
-                WorkingDirectory = _cwd,
-                Arguments = GetArguments(fileName, targetFile, lossy),
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
+                var start = new ProcessStartInfo(toolPath)
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = _cwd,
+                    Arguments = GetArguments(fileName, targetFile, lossy),
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                };
 
-            var stopwatch = Stopwatch.StartNew();
+                var stopwatch = Stopwatch.StartNew();
+                using (var process = Process.Start(start))
+                {
+                    string error = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+                    if (process.ExitCode != 0)
+                        throw new InvalidOperationException(tool + " failed (exit code " + process.ExitCode + "): " + error.Trim());
+                }
 
-            using (var process = Process.Start(start))
-            {
-                process.WaitForExit();
+                stopwatch.Stop();
+                if (!File.Exists(targetFile) || new FileInfo(targetFile).Length == 0)
+                    throw new InvalidOperationException(tool + " did not produce an optimized image.");
+
+                return new CompressionResult(fileName, targetFile, stopwatch.Elapsed);
             }
-
-            stopwatch.Stop();
-
-            return new CompressionResult(fileName, targetFile, stopwatch.Elapsed);
+            catch
+            {
+                if (File.Exists(targetFile)) File.Delete(targetFile);
+                throw;
+            }
         }
 
         private static string GetArguments(string sourceFile, string targetFile, bool lossy)
         {
-            if (!Uri.IsWellFormedUriString(sourceFile, UriKind.RelativeOrAbsolute) && !File.Exists(sourceFile))
-                return null;
-
-            string ext;
-
-            try
-            {
-                ext = Path.GetExtension(sourceFile).ToLowerInvariant();
-            }
-            catch (ArgumentException ex)
-            {
-                System.Diagnostics.Debug.Write(ex);
-                return null;
-            }
-
+            string ext = Path.GetExtension(sourceFile).ToLowerInvariant();
             switch (ext)
             {
                 case ".png":
                     File.Copy(sourceFile, targetFile);
 
                     if (lossy)
-                        return string.Format(CultureInfo.CurrentCulture, "/c pingo -s8 -pngpalette=79 -q \"{0}\"", targetFile);
+                        return string.Format(CultureInfo.InvariantCulture, "-s4 -quality=79 -quiet \"{0}\"", targetFile);
                     else
-                        return string.Format(CultureInfo.CurrentCulture, "/c pingo -auto=100 -s8 -q \"{0}\"", targetFile);
+                        return string.Format(CultureInfo.InvariantCulture, "-s4 -lossless -noalpha -quiet \"{0}\"", targetFile);
 
                 case ".jpg":
                 case ".jpeg":
                     if (lossy)
-                        return string.Format(CultureInfo.CurrentCulture, "/c cjpeg -quality 80,60 -dct float -smooth 5 -outfile \"{1}\" \"{0}\"", sourceFile, targetFile);
+                        return string.Format(CultureInfo.InvariantCulture, "-quality 80,60 -optimize -progressive -outfile \"{1}\" \"{0}\"", sourceFile, targetFile);
                     else
-                        return string.Format(CultureInfo.CurrentCulture, "/c jpegtran -copy none -optimize -progressive -outfile \"{1}\" \"{0}\"", sourceFile, targetFile);
-                        //return string.Format(CultureInfo.CurrentCulture, "/c guetzli_windows_x86-64 \"{0}\" \"{1}\"", sourceFile, targetFile);
+                        return string.Format(CultureInfo.InvariantCulture, "-copy none -optimize -progressive -outfile \"{1}\" \"{0}\"", sourceFile, targetFile);
 
                 case ".gif":
-                    return string.Format(CultureInfo.CurrentCulture, "/c gifsicle -O3 \"{0}\" --output=\"{1}\"", sourceFile, targetFile);
+                    return string.Format(CultureInfo.InvariantCulture, "--optimize=3 --no-ignore-errors {2}--output=\"{1}\" \"{0}\"", sourceFile, targetFile, lossy ? "--lossy=80 " : "");
             }
 
             return null;

@@ -50,10 +50,10 @@ namespace IOptimizer
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Optimized " + Path.GetFileName(OriginalFileName) + " in " + Math.Round(Elapsed.TotalMilliseconds / 1000, 2) + " seconds");
+            sb.AppendLine("Optimized " + Path.GetFileName(OriginalFileName) + " in " + Math.Round(Elapsed.TotalMilliseconds / 1000, 2) + " seconds.");
             sb.AppendLine("Before: " + OriginalFileSize + " bytes");
             sb.AppendLine("After: " + ResultFileSize + " bytes");
-            sb.AppendLine("Saving: " + Saving + " bytes / " + Percent + "%");
+            sb.AppendLine("Savings: " + Saving + " bytes / " + Percent + "%");
 
             return sb.ToString();
         }

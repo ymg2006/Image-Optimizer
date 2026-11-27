@@ -11,19 +11,22 @@ namespace IOptimizer
         /// </summary>
         public class Options
         {
-            [Option('i', "input", Required = false, HelpText = "Set input file or folder to compress, if you input folder you must specify with -f option.")]
+            [Value(0, MetaName = "path", Required = false, HelpText = "Input file or folder to compress.")]
+            public string path { get; set; }
+
+            [Option('i', "input", Required = false, HelpText = "Set the input file or folder to compress. For a folder, specify a filter with -f.")]
             public string input { get; set; }
 
-            [Option('f', "filter", Required = false, HelpText = "Set filter to search in folder , example: -f *.png")]
+            [Option('f', "filter", Required = false, HelpText = "Set the file filter for a folder, for example: -f *.png.")]
             public string filter { get; set; }
 
-            [Option('r', "recursive", Default = false, Required = false, HelpText = "Search recursively all sub folders")]
+            [Option('r', "recursive", Default = false, Required = false, HelpText = "Search all subfolders recursively.")]
             public bool recursive { get; set; }
 
-            [Option('l', "lossy", Default = false, Required = false, HelpText = "Convert lossy or not")]
+            [Option('l', "lossy", Default = false, Required = false, HelpText = "Use lossy compression.")]
             public bool lossy { get; set; }
 
-            [Option('b', "backup", Default = false, Required = false, HelpText = "Whether to backup original files or not")]
+            [Option('b', "backup", Default = false, Required = false, HelpText = "Back up original files before replacing them.")]
             public bool backup { get; set; }
         }
         /// <summary>
@@ -40,43 +43,52 @@ namespace IOptimizer
             Parser.Default.ParseArguments<Options>(args)
                 .WithParsed<Options>(opts =>
                 {
-                    if (string.IsNullOrEmpty(opts.input))
+                    if (!string.IsNullOrEmpty(opts.input) && !string.IsNullOrEmpty(opts.path))
                     {
-                        opts.input = args[0];
-                    }
-                    else
-                    {
-                        Console.WriteLine("You mus specify file or directory either by -i or directly after command");
+                        Console.Error.WriteLine("Specify one input path, using -i or directly after the command.");
+                        Environment.ExitCode = 1;
                         return;
                     }
-                    opts.input = (opts.input.StartsWith("/")) ? opts.input.Substring(1) : opts.input;
-                    if (File.GetAttributes(opts.input).HasFlag(FileAttributes.Directory))
+                    opts.input = string.IsNullOrEmpty(opts.input) ? opts.path : opts.input;
+                    if (string.IsNullOrWhiteSpace(opts.input))
                     {
-                        if (string.IsNullOrEmpty(opts.filter))
+                        Console.Error.WriteLine("You must specify a file or folder using -i or directly after the command.");
+                        Environment.ExitCode = 1;
+                        return;
+                    }
+                    try
+                    {
+                        if (File.GetAttributes(opts.input).HasFlag(FileAttributes.Directory))
                         {
-                            Console.WriteLine($"When specifying directory, filter argument is mandatory: -f {opts.filter}");
-                            return;
+                            if (string.IsNullOrEmpty(opts.filter))
+                            {
+                                Console.Error.WriteLine("When specifying a folder, you must provide a file filter, for example: -f *.png.");
+                                Environment.ExitCode = 1;
+                                return;
+                            }
+                            files = new DirectoryInfo(opts.input).GetFiles(opts.filter, opts.recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+                            foreach (FileInfo file in files)
+                            {
+                                Convert(file, opts.lossy, opts.backup);
+                            }
                         }
                         else
                         {
-                            try
-                            {
-                                files = new DirectoryInfo(opts.input).GetFiles(opts.filter, opts.recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
-                                foreach (FileInfo file in files)
-                                {
-                                    Convert(file, opts.lossy, opts.backup);
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                Console.WriteLine(e.Message.ToString());
-                                return;
-                            }
+                            Convert(new FileInfo(opts.input), opts.lossy, opts.backup);
                         }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        Convert(new FileInfo(opts.input), opts.lossy, opts.backup);
+                        Console.Error.WriteLine("Could not optimize \"" + opts.input + "\": " + e.Message);
+                        Environment.ExitCode = 1;
+                    }
+                })
+                .WithNotParsed(errors =>
+                {
+                    foreach (var error in errors)
+                    {
+                        if (error.Tag != ErrorType.HelpRequestedError && error.Tag != ErrorType.VersionRequestedError)
+                            Environment.ExitCode = 1;
                     }
                 });
         }
@@ -93,7 +105,17 @@ namespace IOptimizer
 
                 if (File.Exists(result.ResultFileName))
                 {
-                    if (backup) File.Copy(result.OriginalFileName, result.OriginalFileName + ".bkp");
+                    if (backup)
+                    {
+                        string backupFileName = result.OriginalFileName + ".bkp";
+                        int backupNumber = 1;
+                        while (File.Exists(backupFileName))
+                        {
+                            backupFileName = result.OriginalFileName + ".bkp" + backupNumber;
+                            backupNumber++;
+                        }
+                        File.Copy(result.OriginalFileName, backupFileName);
+                    }
                     File.Copy(result.ResultFileName, result.OriginalFileName, true);
                     File.Delete(result.ResultFileName);
                     Console.WriteLine(result.ToString());
@@ -101,7 +123,8 @@ namespace IOptimizer
             }
             else
             {
-                Console.WriteLine("Not supported format");
+                Console.Error.WriteLine("Unsupported file format.");
+                Environment.ExitCode = 1;
                 return;
             }
         }

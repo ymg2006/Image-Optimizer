@@ -1,0 +1,58 @@
+{
+    "updated":  "2026-11-27",
+    "platform":  "windows-x64-ucrt",
+    "tools":  [
+                  {
+                      "name":  "pingo",
+                      "version":  "1.29 rc3",
+                      "sourceUrl":  "https://css-ig.net/bin/pingo.zip",
+                      "sourceSha256":  "f166938cb1266d215a83ed7e4550e1edc2063b5e150b3d68712f7d25fa3b5f1c",
+                      "files":  [
+                                    {
+                                        "name":  "pingo.exe",
+                                        "sha256":  "f0122164d651bf8a1790759d387cbe6d8afbc2f6236a53af628de7a1acdd8be3"
+                                    }
+                                ]
+                  },
+                  {
+                      "name":  "mozjpeg",
+                      "version":  "4.1.1",
+                      "sourceUrl":  "https://github.com/mozilla/mozjpeg/archive/refs/tags/v4.1.1.zip",
+                      "sourceSha256":  "7467e5456dcc2903104e138e0e553488e09b3ce9cabb4cb33c87905e7e97637d",
+                      "files":  [
+                                    {
+                                        "name":  "cjpeg.exe",
+                                        "sha256":  "d880a0b304d9b3ba65b5b7a327921fde62ce3883d6f54db350219cda3cfec5e8"
+                                    },
+                                    {
+                                        "name":  "jpegtran.exe",
+                                        "sha256":  "aabbbbaab4d3a9513bf9804f13d2a1f641ac4674a1cfb6cc4742e7c36a2aad87"
+                                    }
+                                ]
+                  },
+                  {
+                      "name":  "gifsicle",
+                      "version":  "1.99",
+                      "sourceUrl":  "https://www.lcdf.org/gifsicle/gifsicle-1.99.tar.gz",
+                      "sourceSha256":  "c21a01f670a336f5412b1870e5a6c241252a3408a3e699d216d58bd41011ae06",
+                      "files":  [
+                                    {
+                                        "name":  "gifsicle.exe",
+                                        "sha256":  "7b4d2c106e61115d97d96c3b63eb9e2904e7fe4abd7175c6f97814132818530c"
+                                    }
+                                ]
+                  },
+                  {
+                      "name":  "guetzli",
+                      "version":  "1.0.1",
+                      "sourceUrl":  "https://github.com/google/guetzli/releases/download/v1.0.1/guetzli_windows_x86-64.exe",
+                      "sourceSha256":  "bbac41d606c96cc57a94c802e581591647d6e1cfc83a97522509edbd392faeca",
+                      "files":  [
+                                    {
+                                        "name":  "guetzli_windows_x86-64.exe",
+                                        "sha256":  "bbac41d606c96cc57a94c802e581591647d6e1cfc83a97522509edbd392faeca"
+                                    }
+                                ]
+                  }
+              ]
+}
